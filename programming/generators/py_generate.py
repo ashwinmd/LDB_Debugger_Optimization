@@ -1,5 +1,6 @@
 from .model import ModelBase, message_to_str
-from .model import ModelBase, Message, StarCoder
+# from .model import ModelBase, Message, StarCoder
+from .model import ModelBase, Message
 from tracing import get_code_traces_block
 from typing import Optional, List, Union
 import ast

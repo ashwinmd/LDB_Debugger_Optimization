@@ -1,7 +1,7 @@
 from typing import List, Union, Optional, Literal
 import dataclasses
 import os
-from vllm import LLM, SamplingParams
+# from vllm import LLM, SamplingParams
 from tenacity import (
     retry,
     stop_after_attempt,  # type: ignore
@@ -162,7 +162,7 @@ class GPT35(GPTChat):
     def __init__(self, key):
         super().__init__("gpt-3.5-turbo-0613", key)
 
-
+'''
 class VLLMModelBase(ModelBase):
     """
     Base for huggingface chat models
@@ -235,3 +235,4 @@ class StarCoder(VLLMModelBase):
 class CodeLlama(VLLMModelBase):
     def __init__(self, port=""):
         super().__init__("codellama/CodeLlama-34b-Instruct-hf", port)
+'''
