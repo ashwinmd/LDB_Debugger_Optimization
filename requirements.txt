@@ -9,3 +9,4 @@ astor
 graphviz
 # vllm
 astroid
+groq

@@ -3,10 +3,14 @@ import gzip
 import json
 import openai
 import jsonlines
+import groq
 
 from typing import List
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+groq.api_key = os.getenv("GROQ_API_KEY")
+
+
 IMPORT_HEADER = "from typing import *\nimport math\nfrom heapq import *\nimport itertools\nimport re\nimport typing\nimport heapq\n_str=str\nimport re\n"
 
 def prepare_function_from_seed(dataset_type, prompt, seed, entry_point):

@@ -8,6 +8,7 @@ from tenacity import (
     wait_random_exponential,  # type: ignore
 )
 from openai import OpenAI
+from groq import Groq
 from transformers import GPT2Tokenizer, AutoTokenizer
 
 MessageRole = Literal["system", "user", "assistant"]
@@ -151,6 +152,64 @@ class GPTChat(ModelBase):
     def generate_chat(self, messages: List[Message], stop: List[str] = None, max_tokens: int = 1024, temperature: float = 0.0, num_comps: int = 1) -> Union[List[str], str]:
         res = self.gpt_chat(messages, stop, max_tokens, temperature, num_comps)
         return res
+    
+
+class GroqChat(ModelBase):
+    def __init__(self, model_name: str, key: str = ""):
+        self.name = model_name
+        self.is_chat = True
+        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+        if key != "":
+            self.client = Groq(api_key=key)
+        else:
+            self.client = Groq()
+    
+    def groq_chat(
+        self,
+        messages,
+        stop: List[str] = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.0,
+        num_comps=1,
+    ) -> Union[List[str], str]:
+        try:
+            new_messages = change_messages(self.tokenizer, messages, 3097)
+            messages = new_messages
+            response = self.client.chat.completions.create(
+                model=self.name,
+                messages=[dataclasses.asdict(message) for message in messages],
+                temperature=temperature,
+                top_p=1,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+                n=num_comps,
+                stop=stop
+            )
+        except Exception as e:
+            print("Groq Error:", str(e))
+            if "context_length_exceeded" in str(e):
+                messages = change_messages(self.tokenizer, messages, 2097)
+                print("AFTER CHANGE MESSAGE LEN:", len(messages))
+                print(messages)
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=[dataclasses.asdict(message) for message in messages],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=1,
+                    frequency_penalty=0.0,
+                    presence_penalty=0.0,
+                    n=num_comps,
+                )
+            else:
+                assert False, "Groq API error: " + str(e)
+        if num_comps == 1:
+            return response.choices[0].message.content  # type: ignore
+        return [choice.message.content for choice in response.choices]  # type: ignore
+
+    def generate_chat(self, messages: List[Message], stop: List[str] = None, max_tokens: int = 1024, temperature: float = 0.0, num_comps: int = 1) -> Union[List[str], str]:
+        res = self.groq_chat(messages, stop, max_tokens, temperature, num_comps)
+        return res
 
 
 class GPT4(GPTChat):
@@ -161,6 +220,15 @@ class GPT4(GPTChat):
 class GPT35(GPTChat):
     def __init__(self, key):
         super().__init__("gpt-3.5-turbo-0613", key)
+
+class Groq_Llama_Small(GroqChat):
+    def __init__(self, key):
+        super().__init__("llama3-8b-8192", key)
+
+
+class Groq_Llama_Big(GroqChat):
+    def __init__(self, key):
+        super().__init__("llama3-70b-8192", key)
 
 '''
 class VLLMModelBase(ModelBase):
