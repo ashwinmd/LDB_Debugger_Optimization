@@ -123,8 +123,19 @@ def check_block_correctness(messages, model: ModelBase,failed_test: str, block: 
     return is_correct, parsed_response['explanation'], messages
 
 def get_code_body(response):
-    if "```" in response:
+    # if "```" in response:
+    if "```Python" in response:
+        # return response.split("```Python")[1].split("```")[0]
+        # EDITING TO SEE IF THIS WORKS
+        return response.split("```Python")[1].split("```")[0]
+    elif "```python" in response:
+        # return response.split("```Python")[1].split("```")[0]
+        # EDITING TO SEE IF THIS WORKS
         return response.split("```python")[1].split("```")[0]
+    elif "```" in response:
+        # return response.split("```Python")[1].split("```")[0]
+        # EDITING TO SEE IF THIS WORKS
+        return response.split("```")[1].split("```")[0]
     else:
         return response
 
