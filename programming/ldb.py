@@ -56,17 +56,29 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             elif dataset_type in ["TransCoder"]:
                 # Add C++ translation as comments
                 debug_cur_func_impl = convert_comment(item["prompt"]) + cur_func_impl
-            selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
-            generate_function = None
+
+            # selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
+
+            # get scaling factor's worth of tests
+            FAILED_TEST_SCALING_FACTOR = 2 # number of failed tests to unroll into prompt
+            selected_tests = None
+            if len(failed_tests) >= FAILED_TEST_SCALING_FACTOR:
+                selected_tests = random.sample(failed_tests, FAILED_TEST_SCALING_FACTOR)
+            # some failing tests but not full scaling factor's worth
+            elif len(failed_tests) > 0 and len(failed_tests) < FAILED_TEST_SCALING_FACTOR:
+                selected_tests = failed_tests[:]
+            else:
+                selected_tests = None
+
             api_calls += 1 # for below
-            messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_test, item["entry_point"], model, messages, dataset_type, level)
+            messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_tests, item["entry_point"], model, messages, dataset_type, level)
             api_calls += 1 # for below
             cur_func_impl, cur_messages = gen.ldb_generate(
                 func_sig=item["prompt"],
                 model=model,
                 prev_func_impl=cur_func_impl,
                 messages=messages,
-                failed_tests=selected_test,
+                failed_tests=selected_tests,
                 dataset_type=dataset_type)
             
             messages = cur_messages

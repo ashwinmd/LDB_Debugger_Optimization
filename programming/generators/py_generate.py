@@ -129,10 +129,19 @@ def get_code_body(response):
         return response
 
 class PyGenerator:
-    def ldb_debug(self, prompt: str, prev_func_impl: str, failed_test: str, entry: str, model: ModelBase, messages: List[Message], dataset_type: str = "", level: str = "block") -> str:
+    def ldb_debug(self, prompt: str, prev_func_impl: str, failed_tests: List, entry: str, model: ModelBase, messages: List[Message], dataset_type: str = "", level: str = "block") -> str:
         prev_func_impl = trim_header(prev_func_impl)
-        failed_test_string = failed_test.split("# Real Execution Output:")[0]
-        real_test_output = failed_test.split("# Real Execution Output:")[1]
+
+        # combining multiple failed tests into various strings for adding
+        # failed test "batching"
+        failed_test_string = ""
+        real_test_output = ""
+        for t in failed_tests:
+            failed_test_string += t.split("# Real Execution Output:")[0]
+            real_test_output += t.split("# Real Execution Output:")[1]
+
+        failed_test = '\n'.join(failed_tests)
+
         if model.is_chat:
             if dataset_type in ["TransCoder"]:
                 if len(messages) == 0:
@@ -169,7 +178,7 @@ class PyGenerator:
                         )
                     ]
                     print_messages(messages, "268:\n")
-                feedback = f"The code above fails the given unit test:\n{failed_test}. \nHelp me debug this.\n"
+                feedback = f"The code above fails the given unit tests:\n{failed_test}. \nHelp me debug this.\n"
             # Check whether the solution can be executed
             if level == "line":
                 trace_blocks = get_code_traces_line(IMPORT_HEADER + prev_func_impl, failed_test.replace("assert ", "").split("==")[0], entry)
@@ -182,13 +191,13 @@ class PyGenerator:
             if isinstance(trace_blocks, str):
                 if trace_blocks == "*timeout*":
                     print("The program exceeds the time limit!")
-                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
+                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertions are `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
                 elif trace_blocks.startswith("*execution fail*"):
                     print(trace_blocks.replace("*execution fail*", ""))
-                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
+                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertions are `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
                 elif trace_blocks.startswith("*parse fail*"):
                     print("The program is weird")
-                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
+                    msg = [Message(role = "user", content = f"Feedback: With the above function, the assertions are `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
                 else:
                     assert False, "Strange type of trace error: " + trace_blocks
                 print_messages(msg)
@@ -196,7 +205,7 @@ class PyGenerator:
                 return messages
             elif len(trace_blocks) == 0:
                 print("No trace blocks found.")
-                msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
+                msg = [Message(role = "user", content = f"Feedback: With the above function, the assertions are `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
                 print_messages(msg)
                 messages += msg
                 return messages
@@ -322,7 +331,7 @@ class PyGenerator:
         model: ModelBase,
         messages: List[Message],
         prev_func_impl: Optional[str] = None,
-        failed_tests: Optional[str] = None,
+        failed_tests: Optional[List] = None,
         num_comps: int = 1,
         temperature: float = 0.0,
         dataset_type: str = "",
