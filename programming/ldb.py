@@ -9,10 +9,12 @@ from utils import *
 import sys
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="", level = "block"):
+def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_at_k, max_iters, iters_to_run_small, port="", level = "block"):
     exe = PyExecutor()
     gen = PyGenerator()
-    model = model_factory(model_name, port)
+    small_model = model_factory(small_model_name, port)
+    big_model = model_factory(big_model_name, port)
+    current_model = small_model
     cur_pass = 0
     is_solved = False
     implementations = []
@@ -38,7 +40,7 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             break
         # use debug to iteratively improve
         last_func_impl = ""
-        if model.is_chat:
+        if current_model.is_chat:
             messages = []
         else:
             messages = ""
@@ -56,14 +58,22 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             elif dataset_type in ["TransCoder"]:
                 # Add C++ translation as comments
                 debug_cur_func_impl = convert_comment(item["prompt"]) + cur_func_impl
+            
+
+            if cur_iter >= iters_to_run_small:
+                current_model = big_model
+                print("Using big model")
+            else:
+                print("Using small model")
+
             selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
             generate_function = None
             api_calls += 1 # for below
-            messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_test, item["entry_point"], model, messages, dataset_type, level)
+            messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_test, item["entry_point"], current_model, messages, dataset_type, level)
             api_calls += 1 # for below
             cur_func_impl, cur_messages = gen.ldb_generate(
                 func_sig=item["prompt"],
-                model=model,
+                model=current_model,
                 prev_func_impl=cur_func_impl,
                 messages=messages,
                 failed_tests=selected_test,
@@ -112,8 +122,10 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
 
 def run_ldb(
     dataset: List[dict],
-    model_name: str,
+    small_model_name: str,
+    big_model_name: str,
     max_iters: int,
+    iters_to_run_small: int,
     n_proc: int,
     pass_at_k: int,
     log_path: str,
@@ -125,7 +137,7 @@ def run_ldb(
 ) -> None:
     print("Number of proc:", n_proc)
     num_items = len(dataset)
-    args = iter([(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port, level) for i, item in enumerate_resume(dataset, log_path, seedfile, testfile)])
+    args = iter([(i, item, log_path, small_model_name, big_model_name, num_items, pass_at_k, max_iters, iters_to_run_small, port, level) for i, item in enumerate_resume(dataset, log_path, seedfile, testfile)])
     if n_proc == 1:
         for item in args:
             debug(*item)

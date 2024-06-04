@@ -15,11 +15,15 @@ def get_args():
     parser.add_argument("--strategy", type=str,
                         help="Strategy: `simple`, `ldb`")
     parser.add_argument(
-        "--model", type=str, help="OpenAI models only for now. For best results, use GPT-4")
+        "--small_model", type=str, help="OpenAI models only for now. For best results, use GPT-4")
+    parser.add_argument(
+        "--big_model", type=str, help="OpenAI models only for now. For best results, use GPT-4")
     parser.add_argument("--pass_at_k", type=int,
                         help="Pass@k metric", default=1)
     parser.add_argument("--max_iters", type=int,
                         help="The maximum number of self-improvement iterations", default=10)
+    parser.add_argument("--iters_to_run_small", type=int,
+                        help="The number of iterations to try with a smaller LLM", default=5)
     parser.add_argument("--n_proc", type=int,
                         help="The number of processes", default=1)
     parser.add_argument("--seedfile", type=str, help="seed file of the solutions", default="")
@@ -64,7 +68,7 @@ def main(args):
     log_dir = os.path.join(args.root_dir, args.run_name)
     seed_name = os.path.basename(args.seedfile).split('/')[-1].replace("jsonl", "")
     log_path = os.path.join(
-        log_dir, f"{dataset_name}_{args.strategy}_{args.max_iters}_{args.model}_pass_at_{args.pass_at_k}_seed_{seed_name}.jsonl")
+        log_dir, f"{dataset_name}_{args.strategy}_max_iters_{args.max_iters}_run_small_{args.iters_to_run_small}_small_model_{args.small_model}_big_model_{args.big_model}_pass_at_{args.pass_at_k}_seed_{seed_name}.jsonl")
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -96,8 +100,10 @@ pass@k: {args.pass_at_k}
     # evaluate with pass@k
     run_strategy(
         dataset=dataset,
-        model_name=args.model,
+        small_model_name=args.small_model,
+        big_model_name=args.big_model,
         max_iters=args.max_iters,
+        iters_to_run_small = args.iters_to_run_small,
         n_proc=args.n_proc,
         pass_at_k=args.pass_at_k,
         log_path=log_path,
