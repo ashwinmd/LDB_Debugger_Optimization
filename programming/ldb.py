@@ -37,11 +37,16 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             is_solved = exe.evaluate(item["entry_point"], cur_func_impl, item["test"], timeout=10)
             break
         # use debug to iteratively improve
-        last_func_impl = ""
         if model.is_chat:
             messages = []
         else:
             messages = ""
+        
+        # backtracking related
+        prev_num_failed = None
+        prev_messages = None
+        prev_implementation = None
+
         while cur_iter < max_iters:
             # get self-reflection by debugging a random failed tests
             # The output is 
@@ -57,7 +62,7 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
                 # Add C++ translation as comments
                 debug_cur_func_impl = convert_comment(item["prompt"]) + cur_func_impl
             selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
-            generate_function = None
+
             api_calls += 1 # for below
             messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_test, item["entry_point"], model, messages, dataset_type, level)
             api_calls += 1 # for below
@@ -75,12 +80,18 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             else:
                 token_nums += sum([len(tokenizer.tokenize(msg.content)) for msg in messages])
             cur_func_impl = prepare_function_from_seed(dataset_type, item["prompt"], cur_func_impl, item["entry_point"])
-            last_func_impl = cur_func_impl
+
             implementations.append(cur_func_impl)
             # check if all internal unit tests pass
             is_passing, failed_tests, _ = exe.execute(
                 cur_func_impl, tests_i)
             test_feedback.append(failed_tests)
+
+            if prev_num_failed is not None and len(failed_tests) > prev_num_failed:
+                cur_func_impl = prev_implementation
+                messages = prev_messages
+                continue
+
             # if passed, check if it passes the real tests, exit early
             if is_passing or cur_iter == max_iters - 1:
                 if is_passing:
@@ -96,6 +107,11 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
                 break
             cur_iter += 1
             sys.stdout.flush()
+
+            prev_num_failed = len(failed_tests)
+            prev_implementation = cur_func_impl
+            prev_messages = messages
+
         cur_pass += 1
     item["is_passing"] = is_passing
     item["is_solved"] = is_solved
