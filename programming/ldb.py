@@ -90,6 +90,7 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
             if prev_num_failed is not None and len(failed_tests) > prev_num_failed:
                 cur_func_impl = prev_implementation
                 messages = prev_messages
+                cur_iter += 1
                 continue
 
             # if passed, check if it passes the real tests, exit early
