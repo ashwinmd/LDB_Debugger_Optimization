@@ -14,7 +14,10 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
     gen = PyGenerator()
     small_model = model_factory(small_model_name, port)
     big_model = model_factory(big_model_name, port)
+
+    use_small_model = True #Will be set to false when you exceed iters_to_run_small
     current_model = small_model
+
     cur_pass = 0
     is_solved = False
     implementations = []
@@ -22,7 +25,11 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
     cur_func_impl = ""
     dataset_type = item["task_id"].split("/")[0]
     token_nums = 0
+    token_nums_small = 0
+    token_nums_big = 0
     api_calls = 0
+    api_calls_small = 0
+    api_calls_big = 0
     while cur_pass < pass_at_k and not is_solved:
         cur_iter = 0
         tests_i = item['given_tests']
@@ -61,6 +68,7 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
             
 
             if cur_iter >= iters_to_run_small:
+                use_small_model = False
                 current_model = big_model
                 print("Using big model")
             else:
@@ -68,9 +76,17 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
 
             selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
             generate_function = None
+
             api_calls += 1 # for below
+            if use_small_model: api_calls_small+=1
+            else: api_calls_big+=1
+
             messages = gen.ldb_debug(item["prompt"], debug_cur_func_impl, selected_test, item["entry_point"], current_model, messages, dataset_type, level)
+
             api_calls += 1 # for below
+            if use_small_model: api_calls_small+=1
+            else: api_calls_big+=1
+
             cur_func_impl, cur_messages = gen.ldb_generate(
                 func_sig=item["prompt"],
                 model=current_model,
@@ -80,10 +96,18 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
                 dataset_type=dataset_type)
             
             messages = cur_messages
+
+            tokensToAdd = 0
             if isinstance(messages, str):
-                token_nums += len(tokenizer.tokenize(messages))
+                tokensToAdd = len(tokenizer.tokenize(messages))
+                
             else:
-                token_nums += sum([len(tokenizer.tokenize(msg.content)) for msg in messages])
+                tokensToAdd = sum([len(tokenizer.tokenize(msg.content)) for msg in messages])
+            
+            token_nums += tokensToAdd
+            if use_small_model: token_nums_small += tokensToAdd
+            else: token_nums_big += tokensToAdd
+
             cur_func_impl = prepare_function_from_seed(dataset_type, item["prompt"], cur_func_impl, item["entry_point"])
             last_func_impl = cur_func_impl
             implementations.append(cur_func_impl)
@@ -115,7 +139,11 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
     item["generated_test"] = tests_i
     item["debug_iter"] = cur_iter
     item["token_nums"] = token_nums
+    item["token_nums_small_model"] = token_nums_small
+    item["token_nums_big_model"] = token_nums_big
     item["api_calls"] = api_calls
+    item["api_calls_small_model"] = api_calls_small
+    item["api_calls_big_model"] = api_calls_big
     with FileLock(log_path + ".lock"):
         write_jsonl(log_path, [item], append=True)
     print(f'completed {i+1}/{num_items}')

@@ -212,9 +212,15 @@ class GroqChat(ModelBase):
         return res
 
 
+
+
 class GPT4(GPTChat):
     def __init__(self, key):
         super().__init__("gpt-4-1106-preview", key)
+
+class GPT4o(GPTChat):
+    def __init__(self, key):
+        super().__init__("gpt-4o", key)
 
 
 class GPT35(GPTChat):

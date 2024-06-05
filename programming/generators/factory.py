@@ -1,10 +1,10 @@
 from .py_generate import PyGenerator
 # from .model import CodeLlama, ModelBase, GPT4, GPT35, StarCoder
-from .model import ModelBase, GPT4, GPT35, Groq_Llama_Big, Groq_Llama_Small
+from .model import ModelBase, GPT4, GPT35, GPT4o, Groq_Llama_Big, Groq_Llama_Small
 
 def model_factory(model_name: str, port: str = "", key: str = "") -> ModelBase:
-    if "gpt-4" in model_name:
-        return GPT4(key)
+    if "gpt-4o" in model_name:
+        return GPT4o(key)
     elif model_name == "gpt-3.5-turbo-0613":
         return GPT35(key)
     elif model_name == "llama3-8b-8192":
