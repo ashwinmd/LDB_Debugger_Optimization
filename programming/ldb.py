@@ -9,6 +9,8 @@ from utils import *
 import sys
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
+import time
+
 def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_at_k, max_iters, iters_to_run_small, port="", level = "block"):
     exe = PyExecutor()
     gen = PyGenerator()
@@ -30,6 +32,7 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
     api_calls = 0
     api_calls_small = 0
     api_calls_big = 0
+    initial_time = time.time()
     while cur_pass < pass_at_k and not is_solved:
         cur_iter = 0
         tests_i = item['given_tests']
@@ -144,6 +147,7 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
     item["api_calls"] = api_calls
     item["api_calls_small_model"] = api_calls_small
     item["api_calls_big_model"] = api_calls_big
+    item["time_taken_seconds"] = time.time() - initial_time
     with FileLock(log_path + ".lock"):
         write_jsonl(log_path, [item], append=True)
     print(f'completed {i+1}/{num_items}')
