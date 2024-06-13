@@ -73,9 +73,9 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
             if cur_iter >= iters_to_run_small:
                 use_small_model = False
                 current_model = big_model
-                print("Using big model")
-            else:
-                print("Using small model")
+                # print("Using big model")
+            # else:
+                # print("Using small model")
 
             selected_test = failed_tests[random.randint(0,len(failed_tests)-1)] if len(failed_tests) >= 1 else None
             generate_function = None
@@ -120,10 +120,10 @@ def debug(i, item, log_path, small_model_name, big_model_name, num_items, pass_a
             test_feedback.append(failed_tests)
             # if passed, check if it passes the real tests, exit early
             if is_passing or cur_iter == max_iters - 1:
-                if is_passing:
-                    print(f'{item["task_id"]} pass generated tests, check real tests')
-                else:
-                    print(f'{item["task_id"]} fail generated tests, check real tests')
+                # if is_passing:
+                #     print(f'{item["task_id"]} pass generated tests, check real tests')
+                # else:
+                #     print(f'{item["task_id"]} fail generated tests, check real tests')
                 is_solved = exe.evaluate(
                     item["entry_point"], cur_func_impl, item["test"], timeout=10)
                 if is_solved:

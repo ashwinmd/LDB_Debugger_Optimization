@@ -48,7 +48,7 @@ def async_main(
     gen = PyGenerator()
     model = model_factory(model_name)
 
-    print_v = make_printv(verbose)
+    # print_v = make_printv(verbose)
     
     num_items = len(dataset)
     num_success = 0
