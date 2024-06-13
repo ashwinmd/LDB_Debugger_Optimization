@@ -85,7 +85,8 @@ dsa
 def bleh():
     return aaa
 """
-    print(parse_code_block(CODE, "python"))
+    # print(parse_code_block(CODE, "python"))
+    parse_code_block(CODE, "python")
     CODE = """def total_match(lst1: List[str], lst2: List[str]) -> List[str]:
     \"\"\"
     Write a function that accepts two lists of strings and returns the list that has
@@ -115,4 +116,5 @@ def bleh():
     else:
         return lst1
     """
-    print(parse_code_block(CODE, "python"))
+    # print(parse_code_block(CODE, "python"))
+    parse_code_block(CODE, "python")
