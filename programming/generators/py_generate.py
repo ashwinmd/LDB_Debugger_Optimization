@@ -46,10 +46,11 @@ def parse_explanation(responses, trace_blocks, prev_func_impl):
     return wrong_block, explanation
 
 def print_messages(messages: List[Message], prefix = "") -> None:
-    print("::CHAT MESSAGE::" +prefix)
-    for msg in messages:
-        print(msg.content)
-    print("==================")
+    # print("::CHAT MESSAGE::" +prefix)
+    # for msg in messages:
+    #     print(msg.content)
+    # print("==================")
+    return
 
 def parse_debug_response(text):
     text = text.replace('```json', '').replace('```', '')
@@ -89,10 +90,10 @@ def check_block_correctness(messages, model: ModelBase,failed_test: str, block: 
         debug_response = None
         while trials < max_trials:
             try:
-                print_messages(debug_message)
+                # print_messages(debug_message)
                 debug_response = model.generate_chat(messages=messages, stop=["### Debug End"])
             except Exception as e:
-                print("Generate Debug Response Fail:\n" + str(e))
+                # print("Generate Debug Response Fail:\n" + str(e))
                 trials += 1
                 time.sleep(5)
                 continue
@@ -101,7 +102,7 @@ def check_block_correctness(messages, model: ModelBase,failed_test: str, block: 
         if debug_response is None:
             debug_response = "{\"correct\": \"false\", \"explanation\": \"I don't know why this is wrong.\"}"
         debug_response = debug_response.strip()
-        print(debug_response+"\n### Debug End")
+        # print(debug_response+"\n### Debug End")
     else:
         messages += f"### Debug Start\n### Execution Trace\n{block}\n### Debug Response"
         debug_response = model.generate_completion(messages, temperature=0, stop=["### Debug End"])
@@ -161,7 +162,7 @@ class PyGenerator:
                             content = f"{prev_func_impl}"
                         )
                     ]
-                    print_messages(messages, "213:\n")
+                    # print_messages(messages, "213:\n")
                 feedback = f"The Python translation does not do the same thing as the C++ code. Help me debug this. \nThese are the results of one failed unit test that tests whether the Python translation’s outputs match the C++ program’s outputs:\n{failed_test}."
             elif dataset_type in ["HumanEval", "MBPP"]:
                 if len(messages) == 0:
@@ -179,7 +180,7 @@ class PyGenerator:
                             content = f"{prev_func_impl}"
                         )
                     ]
-                    print_messages(messages, "268:\n")
+                    # print_messages(messages, "268:\n")
                 feedback = f"The code above fails the given unit test:\n{failed_test}. \nHelp me debug this.\n"
             # Check whether the solution can be executed
             if level == "line":
@@ -188,7 +189,7 @@ class PyGenerator:
                 trace_blocks = get_code_traces_function(IMPORT_HEADER + prev_func_impl, failed_test.replace("assert ", "").split("==")[0], entry)
             else:
                 trace_blocks = get_code_traces_block(IMPORT_HEADER + prev_func_impl, failed_test.replace("assert ", "").split("==")[0], entry)
-            print("Get trace blocks...")
+            # print("Get trace blocks...")
             # CANNOT EXECUTED
             if isinstance(trace_blocks, str):
                 if trace_blocks == "*timeout*":
@@ -202,13 +203,13 @@ class PyGenerator:
                     msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
                 else:
                     assert False, "Strange type of trace error: " + trace_blocks
-                print_messages(msg)
+                # print_messages(msg)
                 messages += msg
                 return messages
             elif len(trace_blocks) == 0:
-                print("No trace blocks found.")
+                # print("No trace blocks found.")
                 msg = [Message(role = "user", content = f"Feedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.")]
-                print_messages(msg)
+                # print_messages(msg)
                 messages += msg
                 return messages
             # Start debugging
@@ -222,13 +223,13 @@ class PyGenerator:
             elif level == "function":
                 max_num_blocks = 1
                 block_lines = trace_blocks[0]
-                print("313:", len(block_lines))
+                # print("313:", len(block_lines))
                 if len(block_lines) > 30:
                     trace_blocks[0] = block_lines[:15] + ["..."] + block_lines[-15:]
             else:
                 max_num_blocks = 10
             if len(trace_blocks) > max_num_blocks:
-                print("Sample trace block...")
+                # print("Sample trace block...")
                 selected_blocks = trace_blocks[:int(max_num_blocks/2)] + trace_blocks[-int(max_num_blocks/2):]
                 trace_blocks  = selected_blocks
             for i, b in enumerate(trace_blocks):
@@ -237,7 +238,7 @@ class PyGenerator:
                 msg[0].content += b
             msg[0].content += "\n"
             messages += msg
-            print_messages(msg)
+            # print_messages(msg)
             explanation_all = model.generate_chat(messages=messages, num_comps=1, temperature=0, stop=['[debug end]', 'Here is the updated code:'])
 
             #wrong_block, explanation = parse_explanation(explanation_all, trace_blocks, prev_func_impl)
@@ -247,32 +248,32 @@ class PyGenerator:
                         content = explanation_all
                     )
             ]
-            print_messages(msg)
+            # print_messages(msg)
             messages += msg
         else:
             if dataset_type in ["TransCoder"]:
                 if len(messages) == 0:
                     # Few shot examples
                     messages = f"{PY_CHAINOFDEBUG_TRANSLATION_INSTRUCTION}"
-                    print(messages)
+                    # print(messages)
                     # Explain C++
                     delta_msg = f"\n[c++]\n{self.get_last_cpp(prompt)}\n[/c++]\n[explanation]"
-                    print(delta_msg)
+                    # print(delta_msg)
                     messages += delta_msg
                     explanation = model.generate_completion(messages, temperature=0, stop=["[/explanation]"])
                     delta_msg = f"\n{explanation.strip()}\n[/explanation]\n[python]\n{prev_func_impl}\n[/python]"
-                    print(delta_msg)
+                    # print(delta_msg)
                     messages += delta_msg
                 # Fix
                 delta_msg = f"\nThe Python translation does not do the same thing as the C++ code. These are the results of one failed unit test that tests whether the Python translation’s outputs match the C++ program’s outputs:\nFailed: {failed_test_string}\nActual Result: {real_test_output}"
             else:
                 if len(messages) == 0:
                     messages = f"{PY_CHAINOFDEBUG_TEXT2CODE_INSTRUCTION}\n{failed_test_string}\n\n{prev_func_impl}\n"
-                    print(messages)
+                    # print(messages)
                 else:
                     delta_msg = f"### Task Start ###\n# These are the assertions for your function:\n{failed_test_string}\n\n{prev_func_impl}\n"
                     messages += delta_msg
-                    print(delta_msg)
+                    # print(delta_msg)
                 # Explain Python
                 delta_msg = f"\nFeedback: With the above function, the assertion is `{failed_test_string}` but the real execution output is `{real_test_output}`.\n"
             if level == "line":
@@ -281,7 +282,7 @@ class PyGenerator:
                 trace_blocks = get_code_traces_function(IMPORT_HEADER + prev_func_impl, failed_test.replace("assert ", "").split("==")[0], entry)
             else:
                 trace_blocks = get_code_traces_block(IMPORT_HEADER + prev_func_impl, failed_test.replace("assert ", "").split("==")[0], entry)
-            print("Get trace blocks...")
+            # print("Get trace blocks...")
             # CANNOT EXECUTED
             if isinstance(trace_blocks, str):
                 if trace_blocks == "*timeout*":
@@ -292,11 +293,11 @@ class PyGenerator:
                     delta_msg += "\nThe program cannot be executed!"
                 else:
                     assert False, "Strange type of trace error: " + trace_blocks
-                print(delta_msg)
+                # print(delta_msg)
                 messages += delta_msg
                 return messages
             elif len(trace_blocks) == 0:
-                print("No trace blocks found.")
+                # print("No trace blocks found.")
                 delta_msg += "\nThe program cannot be executed!"
                 messages += delta_msg
                 return messages
@@ -311,7 +312,7 @@ class PyGenerator:
             else:
                 max_num_blocks = 10
             if len(trace_blocks) > max_num_blocks:
-                print("Sample trace block...")
+                # print("Sample trace block...")
                 selected_blocks = trace_blocks[:int(max_num_blocks/2)] + trace_blocks[-int(max_num_blocks/2):]
                 trace_blocks  = selected_blocks
             for i, b in enumerate(trace_blocks):
@@ -320,11 +321,11 @@ class PyGenerator:
                 delta_msg += b
             delta_msg += "\n[debug]"
             messages += delta_msg
-            print(delta_msg)
+            # print(delta_msg)
             explanation = model.generate_completion(messages=messages, stop=["[/debug]"], temperature=0)
             delta_msg = "\n" + explanation.strip() + "\n[/debug]"
             messages += delta_msg
-            print(delta_msg)
+            # print(delta_msg)
         return messages
 
     def ldb_generate(
@@ -348,7 +349,7 @@ class PyGenerator:
                         )
                 ]
                 messages += msg
-                print_messages(msg)
+                # print_messages(msg)
                 func_bodies = model.generate_chat(messages=messages)
                 msg = [
                     Message(
@@ -357,7 +358,7 @@ class PyGenerator:
                         )
                 ]
                 messages += msg
-                print_messages(msg)
+                # print_messages(msg)
             elif dataset_type in ["HumanEval", "MBPP"]:
                 msg = [
                     Message(
@@ -366,7 +367,7 @@ class PyGenerator:
                         )
                 ]
                 messages += msg
-                print_messages(msg)
+                # print_messages(msg)
                 func_bodies = model.generate_chat(messages=messages)
                 msg = [
                     Message(
@@ -375,13 +376,13 @@ class PyGenerator:
                         )
                 ]
                 messages += msg
-                print_messages(msg)
+                # print_messages(msg)
         else:
             if dataset_type in ["TransCoder"]:
                 delta_msg = "\nCorrect the translation.\n[python]"
             else:
                 delta_msg = "\nPlease fix the Python code.\n[python]"
-            print(delta_msg)
+            # print(delta_msg)
             messages += delta_msg
             func_bodies = model.generate_completion(messages, temperature=0, stop=["[/python]"])
         if num_comps == 1:
@@ -392,7 +393,7 @@ class PyGenerator:
                     delta_msg = f"\n{func_body_str}\n[/python]"
                 else:
                     delta_msg = f"\n{func_body_str}\n[/python]\n### Task End ###"
-                print(delta_msg)
+                # print(delta_msg)
                 messages += delta_msg
             else:
                 messages.append(Message(role="assistant", content=func_body_str))
@@ -412,7 +413,7 @@ class PyGenerator:
         if model.is_chat:
             system_prompt = "You are an expert programming assistant."
             user_prompt = f"Translate the C++ code into Python code. Please respond with code only (with the code inside a Markdown code block). These are the assertions for your function for your reference. Answer with code only:\n{assertion_string}\n{func_sig}"
-            print(system_prompt + "\n" + user_prompt)
+            # print(system_prompt + "\n" + user_prompt)
             messages = [
                 Message(
                     role="system",
@@ -446,7 +447,7 @@ class PyGenerator:
             func_bodies = model.generate_chat(messages=messages, num_comps=num_comps, temperature=0)
         else:
             messages = f"# Write Python function to complete the task and pass the assertion tests.\n\n### Task Start ###\n# These are the assertions for your function:\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\n\ndef similar_elements(test_tup1, test_tup2):\n\"\"\" Write a function to find the similar elements from the given two tuple lists. \"\"\"\n    res = tuple(set(test_tup1) & set(test_tup2))\n    return (res)\n### Task End ###\n\n### Task Start ###\n# These are the assertions for your function:\nassert is_not_prime(2) == False\n\nimport math\ndef is_not_prime(n):\n    \"\"\" Write a python function to identify non-prime numbers. \"\"\"\n    result = False\n    for i in range(2,int(math.sqrt(n)) + 1):\n        if n % i == 0:\n            result = True\n    return result\n### Task End ###\n\n### Task Start ###\n# These are the assertions for your function:\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65]\n\nimport heapq as hq\ndef heap_queue_largest(nums,n):\n    \"\"\" Write a function to find the largest integers from a given list of numbers using heap queue algorithm. \"\"\"\n    largest_nums = hq.nlargest(n, nums)\n    return largest_nums\n### Task End ###\n\n### Task Start ###\n# These are the assertions for your function:\n{given_tests[0].strip()}\n\n{func_sig.strip()}"
-            print(messages)
+            # print(messages)
             func_bodies = model.generate_completion(messages, temperature=0, stop=["### Task End ###"])
         return func_bodies, messages
 

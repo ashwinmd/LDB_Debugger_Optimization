@@ -7,7 +7,7 @@ from .executor_types import ExecuteResult, Executor
 
 class PyExecutor(Executor):
     def execute(self, func: str, tests: List[str], timeout: int = 1) -> ExecuteResult:
-        print("|| Begin Executing...")
+        # print("|| Begin Executing...")
         # Combine function code and assert statement
         imports = 'from typing import *'
         func_test_list = [f'{imports}\n{func}\n{test}' for test in tests]
@@ -27,7 +27,7 @@ class PyExecutor(Executor):
                 is_passing = False
 
         state = []
-        print("|| End Executing...")
+        # print("|| End Executing...")
         return ExecuteResult(is_passing, failed_tests, state)
 
     def evaluate(self, name: str, func: str, test: str, timeout: int = 1) -> bool:
@@ -75,4 +75,5 @@ if __name__ == "__main__":
     # Test the function
     func = "def add(a, b):\n    while True:\n        x = 1\n    return a + b"
     tests = ["assert add(1, 2) == 3", "assert add(1, 2) == 4"]
-    print(PyExecutor().execute(func, tests, timeout=1))
+    # print(PyExecutor().execute(func, tests, timeout=1))
+    PyExecutor().execute(func, tests, timeout=1)

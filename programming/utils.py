@@ -112,13 +112,14 @@ def convert_comment(translation_prompt):
     return commented_prog
 
 def make_printv(verbose: bool):
-    def print_v(*args, **kwargs):
-        if verbose:
-            kwargs["flush"] = True
-            print(*args, **kwargs)
-        else:
-            pass
-    return print_v
+    # def print_v(*args, **kwargs):
+    #     if verbose:
+    #         kwargs["flush"] = True
+    #         print(*args, **kwargs)
+    #     else:
+    #         pass
+    # return print_v
+    return
 
 
 def read_jsonl(path: str) -> List[dict]:
@@ -178,7 +179,7 @@ def enumerate_resume(dataset, results_path, seedfile = None, testfile = None):
     if seedfile is not None:
         items_seed = read_jsonl_map(seedfile)
     if testfile is not None:
-        print("testfile", testfile)
+        # print("testfile", testfile)
         items_test = read_jsonl_map(testfile)
     
     if not os.path.exists(results_path):

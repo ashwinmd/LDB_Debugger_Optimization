@@ -98,10 +98,10 @@ def debug(i, item, log_path, model_name, num_items, pass_at_k, max_iters, port="
 
             # if passed, check if it passes the real tests, exit early
             if is_passing or cur_iter == max_iters - 1:
-                if is_passing:
-                    print(f'{item["task_id"]} pass generated tests, check real tests')
-                else:
-                    print(f'{item["task_id"]} fail generated tests, check real tests')
+                # if is_passing:
+                #     # print(f'{item["task_id"]} pass generated tests, check real tests')
+                # else:
+                #     print(f'{item["task_id"]} fail generated tests, check real tests')
                 is_solved = exe.evaluate(
                     item["entry_point"], cur_func_impl, item["test"], timeout=10)
                 if is_solved:
